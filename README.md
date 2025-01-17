@@ -26,6 +26,14 @@ A reusable framework for generating ACL configuration templates and applying ACL
   python acl_script_framework.py --apply <path_to_yaml>
   ```
 
+Before making changes to ACLs it is advisable to backup the current ACL settings using ``getfacl``. This enables restoration in case of mistakes.
+
+   ```bash
+   getfacl -R /full/path/to/directory > acl_backup.txt
+   # To reapply backed-up ACLs:
+   setfacl --restore=acl_backup.txt
+   ```
+
 ### 2. `generate_test_dirs.py`
 A script to create a test environment with directories, files, and ACL settings for testing purposes.
 
@@ -39,7 +47,7 @@ A script to create a test environment with directories, files, and ACL settings 
 - `get_acl_settings(path)`: Retrieves ACL settings for a specified path.
 
 #### Usage:
-1. Set the `TMPDIR` environment variable to a writable temporary directory.
+1. Set the `TMPDIR` environment variable to a writable temporary directory (e.g, if in an interactive session on Stanage or Bessemer $TMPDIR will already be set).
 2. Run the script:
    ```bash
    python generate_test_dirs.py
