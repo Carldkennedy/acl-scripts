@@ -1,4 +1,4 @@
-# ACL Testing Scripts
+# ACL Scripts
 
 This repository contains two Python scripts designed for generating and testing Access Control List (ACL) configurations in POSIX-compliant systems. These scripts help automate the creation of test environments, application of ACL rules, and verification of changes.
 
