@@ -30,12 +30,24 @@ def generate_yaml_template(output_file):
             "directories": True,
             "files": True,
             "default": True
-        }
+        },
+        "recursive": False
     }
 
     with open(output_file, 'w') as f:
         yaml.dump(template, f, default_flow_style=False, sort_keys=False, indent=2)
     print(f"YAML template written to {output_file}")
+
+def apply_recursive_acl(target_dir, acl_rule):
+    """
+    Apply ACL rule recursively to all files and directories.
+    """
+    try:
+        print(f"Applying recursive ACL: {acl_rule} to {target_dir}")
+        subprocess.run(["setfacl", "-Rm", acl_rule, target_dir], check=True)
+        print("Recursive ACL application completed successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"Error applying recursive ACL: {e.stderr}")
 
 def apply_acl_from_yaml(yaml_file):
     """
@@ -52,6 +64,7 @@ def apply_acl_from_yaml(yaml_file):
     permissions = config.get("permissions", [])
     per_dir_permissions = config.get("per_dir_permissions", [])
     apply_to = config.get("apply_to", {})
+    recursive = config.get("recursive", False)
 
     # Apply general permissions
     for perm in permissions:
@@ -60,23 +73,26 @@ def apply_acl_from_yaml(yaml_file):
             entity = f"u:{perm['user']}"
         elif "group" in perm:
             entity = f"g:{perm['group']}"
-    
+
         if entity:
             acl_rule = f"{entity}:{perm['permissions']}"
         else:
             print(f"Skipping invalid permission entry: {perm}")
             continue
-    
-        # Apply to existing directories and files
-        if apply_to.get("directories", False):
-            subprocess.run(["setfacl", "-Rm", acl_rule, target_dir], check=True)
-        if apply_to.get("files", False):
-            subprocess.run(["setfacl", "-Rm", acl_rule, target_dir], check=True)
-    
-        # Apply as default ACL
-        if apply_to.get("default", False):
-            subprocess.run(["setfacl", "-Rdm", acl_rule, target_dir], check=True)
-    
+
+        # Apply recursively if specified
+        if recursive:
+            apply_recursive_acl(target_dir, acl_rule)
+        else:
+            # Apply to existing directories and files
+            if apply_to.get("directories", False):
+                subprocess.run(["setfacl", "-Rm", acl_rule, target_dir], check=True)
+            if apply_to.get("files", False):
+                subprocess.run(["setfacl", "-Rm", acl_rule, target_dir], check=True)
+            # Apply as default ACL
+            if apply_to.get("default", False):
+                subprocess.run(["setfacl", "-Rdm", acl_rule, target_dir], check=True)
+
     # Apply per-directory permissions
     for entry in per_dir_permissions:
         subdir = os.path.join(target_dir, entry.get("path", ""))
@@ -92,20 +108,18 @@ def apply_acl_from_yaml(yaml_file):
             else:
                 continue
 
-        # Skip if neither user nor group is defined
-        if not entity:
-            print(f"Skipping invalid permission entry: {perm}")
-            continue
-            acl_rule = f"{entity}:{perm['permissions']}"
-            acl_rule = f"{entity}:{perm['permissions']}"
+            # Skip if neither user nor group is defined
+            if not entity:
+                print(f"Skipping invalid permission entry: {perm}")
+                continue
 
-            # Apply ACL to the specific subdirectory
-            subprocess.run([
-                "setfacl", "-Rm", acl_rule, subdir
-            ], check=True)
-            subprocess.run([
-                "setfacl", "-Rdm", acl_rule, subdir
-            ], check=True)
+            acl_rule = f"{entity}:{perm['permissions']}"
+            if recursive:
+                apply_recursive_acl(subdir, acl_rule)
+            else:
+                # Apply ACL to the specific subdirectory
+                subprocess.run(["setfacl", "-Rm", acl_rule, subdir], check=True)
+                subprocess.run(["setfacl", "-Rdm", acl_rule, subdir], check=True)
 
     print("ACLs applied successfully from YAML.")
 

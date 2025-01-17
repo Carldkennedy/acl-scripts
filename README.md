@@ -10,7 +10,8 @@ A reusable framework for generating ACL configuration templates and applying ACL
 #### Features:
 - **Template Generation**: Creates a YAML template for ACL configurations.
 - **Apply ACLs**: Reads ACL rules from a YAML file and applies them to the specified directory and its contents.
-- **Supports Recursive and Default ACLs**: Handles permissions for directories, files, and their defaults.
+- **Recursive and Default ACL Support**: By setting `recursive: true` in the YAML file, ACLs can be applied to all existing subdirectories and files,
+ensuring consistent permissions throughout the directory tree. Default ACLs ensure newly created files inherit the correct permissions.
 
 #### Key Functions:
 - `generate_yaml_template(output_file)`: Generates a YAML template with placeholders for user and group permissions.
@@ -73,6 +74,24 @@ permissions:
     permissions: r-x
   - user: anotheruser
     permissions: rw-
+apply_to:
+  directories: true
+  files: true
+  default: true
+```
+
+By setting `recursive: true`, the script will apply ACLs to all existing directories and files under the target directory, as well as set default ACLs for newly created files and directories.
+
+```yaml
+target_directory: /path/to/target_dir
+permissions:
+  - user: testuser
+    permissions: rwx
+  - group: testgroup
+    permissions: r-x
+  - user: anotheruser
+    permissions: rw-
+recursive: true
 apply_to:
   directories: true
   files: true
